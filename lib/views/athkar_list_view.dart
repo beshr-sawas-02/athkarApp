@@ -1,9 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../controllers/athkar_controller.dart';
+import '../models/thikr_category.dart';
 import '../utils/app_theme.dart';
-import '../widgets/thikr_card.dart';
 import '../widgets/add_thikr_dialog.dart';
+import '../widgets/thikr_card.dart';
 
 class AthkarListView extends StatelessWidget {
   const AthkarListView({super.key});
@@ -21,25 +23,24 @@ class AthkarListView extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
               _buildHeader(context, isDark),
-
-              // List
+              _buildCategoryChips(controller, isDark),
               Expanded(
                 child: Obx(() {
-                  if (controller.athkarList.isEmpty) {
+                  final list = controller.filteredAthkar;
+                  if (list.isEmpty) {
                     return _buildEmptyState(isDark);
                   }
 
                   return ListView.builder(
                     padding: const EdgeInsets.only(top: 8, bottom: 100),
-                    itemCount: controller.athkarList.length,
+                    itemCount: list.length,
                     itemBuilder: (context, index) {
-                      final thikr = controller.athkarList[index];
+                      final thikr = list[index];
                       return ThikrCard(
                         thikr: thikr,
                         isSelected:
-                        controller.selectedThikr.value?.id == thikr.id,
+                            controller.selectedThikr.value?.id == thikr.id,
                         onTap: () {
                           controller.selectThikr(thikr);
                           Get.back();
@@ -47,10 +48,14 @@ class AthkarListView extends StatelessWidget {
                         onDelete: thikr.isDefault
                             ? null
                             : () => _showDeleteConfirmation(
-                          controller,
-                          thikr.id,
-                          thikr.name,
-                        ),
+                                  controller,
+                                  thikr.id,
+                                  thikr.name,
+                                ),
+                        onEdit: () {
+                          controller.selectThikr(thikr);
+                          controller.showEditThikrDialog();
+                        },
                         isDark: isDark,
                       );
                     },
@@ -79,12 +84,64 @@ class AthkarListView extends StatelessWidget {
     );
   }
 
+  Widget _buildCategoryChips(AthkarController controller, bool isDark) {
+    return Obx(() {
+      final selected = controller.categoryFilter.value;
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          children: [
+            _chip(
+              label: 'الكل',
+              selected: selected == null,
+              onTap: () => controller.setCategoryFilter(null),
+              isDark: isDark,
+            ),
+            ...ThikrCategory.values.map(
+              (c) => _chip(
+                label: c.labelAr,
+                selected: selected == c,
+                onTap: () => controller.setCategoryFilter(c),
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _chip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onTap(),
+        selectedColor: AppTheme.primaryGold.withValues(alpha: 0.25),
+        labelStyle: TextStyle(
+          color: selected
+              ? AppTheme.primaryGold
+              : (isDark ? AppTheme.darkText : AppTheme.lightText),
+          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+        ),
+        backgroundColor:
+            isDark ? AppTheme.darkSurfaceVariant : AppTheme.lightSurface,
+      ),
+    );
+  }
+
   Widget _buildHeader(BuildContext context, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          // Back button
           GestureDetector(
             onTap: () => Get.back(),
             child: Container(
@@ -97,7 +154,8 @@ class AthkarListView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                    color:
+                        Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -111,7 +169,6 @@ class AthkarListView extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // Title
           Text(
             'قائمة الأذكار',
             style: AppTheme.arabicTitleStyle.copyWith(
@@ -120,7 +177,6 @@ class AthkarListView extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // Placeholder for symmetry
           const SizedBox(width: 48),
         ],
       ),
@@ -146,7 +202,7 @@ class AthkarListView extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'لا توجد أذكار حالياً',
+            'لا توجد أذكار في هذا التصنيف',
             style: AppTheme.arabicTitleStyle.copyWith(
               color: isDark ? AppTheme.darkText : AppTheme.lightText,
             ),
@@ -161,7 +217,7 @@ class AthkarListView extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: 100), // Space for FAB
+          const SizedBox(height: 100),
         ],
       ),
     );
@@ -170,18 +226,18 @@ class AthkarListView extends StatelessWidget {
   void _showAddDialog(AthkarController controller) {
     Get.dialog(
       AddThikrDialog(
-        onAdd: (name, goal) {
-          controller.addNewThikr(name, goal);
+        onAdd: (name, goal, category) {
+          controller.addNewThikr(name, goal, category: category);
         },
       ),
     );
   }
 
   void _showDeleteConfirmation(
-      AthkarController controller,
-      String id,
-      String name,
-      ) {
+    AthkarController controller,
+    String id,
+    String name,
+  ) {
     final isDark = Get.theme.brightness == Brightness.dark;
 
     Get.dialog(
@@ -229,10 +285,10 @@ class AthkarListView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'لا يمكن التراجع عن هذا الإجراء',
+              'يمكنك التراجع من الإشعار بعد الحذف',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.error.withValues(alpha: 0.8),
+                color: AppTheme.primaryGold.withValues(alpha: 0.9),
               ),
               textAlign: TextAlign.center,
             ),
@@ -246,12 +302,6 @@ class AthkarListView extends StatelessWidget {
               Expanded(
                 child: TextButton(
                   onPressed: () => Get.back(),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   child: Text(
                     'إلغاء',
                     style: TextStyle(

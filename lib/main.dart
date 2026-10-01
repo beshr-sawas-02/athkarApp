@@ -2,27 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:home_widget/home_widget.dart';
+
+import 'bindings/app_bindings.dart';
+import 'controllers/settings_controller.dart';
 import 'utils/app_theme.dart';
 import 'utils/storage_service.dart';
-import 'bindings/app_bindings.dart';
 import 'views/home_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize GetStorage
   await GetStorage.init();
-
-  // Initialize storage service
   await StorageService().init();
+  await HomeWidget.setAppGroupId('group.com.athkar.athkar_app');
 
-  // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -42,31 +41,29 @@ class AthkarApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'أذكاري',
       debugShowCheckedModeBanner: false,
-
-      // Theme configuration
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // Automatic based on system settings
-
-      // Localization
+      themeMode: StorageService().themeMode,
       locale: const Locale('ar', 'SA'),
       fallbackLocale: const Locale('ar', 'SA'),
-
-      // Text direction
       builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
+        return Obx(() {
+          final scale = Get.isRegistered<SettingsController>()
+              ? Get.find<SettingsController>().fontScale.value
+              : StorageService().fontScale;
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: child!,
+            ),
+          );
+        });
       },
-
-      // Initial binding
       initialBinding: AppBindings(),
-
-      // Home page
       home: const HomeView(),
-
-      // Default transition
       defaultTransition: Transition.cupertino,
       transitionDuration: const Duration(milliseconds: 300),
     );

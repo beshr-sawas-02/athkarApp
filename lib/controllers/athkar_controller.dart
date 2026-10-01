@@ -1,8 +1,17 @@
-﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+﻿import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../models/daily_stats.dart';
+import '../models/thikr_category.dart';
 import '../models/thikr_model.dart';
 import '../utils/storage_service.dart';
+import '../utils/widget_helper.dart';
+import 'settings_controller.dart';
 
 class AthkarController extends GetxController {
   final StorageService _storage = StorageService();
@@ -10,6 +19,25 @@ class AthkarController extends GetxController {
   final RxList<Thikr> athkarList = <Thikr>[].obs;
   final Rx<Thikr?> selectedThikr = Rx<Thikr?>(null);
   final RxBool isLoading = true.obs;
+  final Rx<ThikrCategory?> categoryFilter = Rx<ThikrCategory?>(null);
+  final Rx<DailyStats> todayStats = DailyStats(date: StorageService.todayKey()).obs;
+  final RxInt streak = 0.obs;
+
+  Thikr? _lastDeleted;
+  int? _lastDeletedIndex;
+
+  SettingsController get _settings {
+    if (Get.isRegistered<SettingsController>()) {
+      return Get.find<SettingsController>();
+    }
+    return Get.put(SettingsController());
+  }
+
+  List<Thikr> get filteredAthkar {
+    final filter = categoryFilter.value;
+    if (filter == null) return athkarList.toList();
+    return athkarList.where((t) => t.category == filter).toList();
+  }
 
   @override
   void onInit() {
@@ -19,24 +47,60 @@ class AthkarController extends GetxController {
 
   void _initializeAthkar() {
     if (_storage.isFirstRun) {
-      // First run - load default athkar
       athkarList.assignAll(_storage.getDefaultAthkar());
       _storage.saveAthkar(athkarList);
       _storage.setFirstRunComplete();
     } else {
-      // Load saved athkar
       athkarList.assignAll(_storage.loadAthkar());
     }
 
-    if (athkarList.isNotEmpty) {
+    _checkDailyReset();
+    todayStats.value = _storage.getTodayStats();
+    streak.value = _storage.currentStreak;
+
+    final savedId = _storage.selectedThikrId;
+    if (savedId != null) {
+      selectedThikr.value =
+          athkarList.firstWhereOrNull((t) => t.id == savedId) ??
+              (athkarList.isNotEmpty ? athkarList.first : null);
+    } else if (athkarList.isNotEmpty) {
       selectedThikr.value = athkarList.first;
     }
 
     isLoading.value = false;
+    WidgetHelper.update(selectedThikr.value);
+  }
+
+  void _checkDailyReset() {
+    if (!_storage.dailyResetEnabled) return;
+
+    final today = StorageService.todayKey();
+    final last = _storage.lastResetDate;
+    if (last == today) return;
+
+    if (last != null && last != today) {
+      // Persist yesterday snapshot already in stats; reset counters
+      for (var i = 0; i < athkarList.length; i++) {
+        athkarList[i] = athkarList[i].copyWith(count: 0, goalReached: false);
+      }
+      _storage.saveAthkar(athkarList);
+      if (selectedThikr.value != null) {
+        final current = athkarList
+            .firstWhereOrNull((t) => t.id == selectedThikr.value!.id);
+        selectedThikr.value = current;
+      }
+    }
+    _storage.setLastResetDate(today);
   }
 
   void selectThikr(Thikr thikr) {
     selectedThikr.value = thikr;
+    _storage.setSelectedThikrId(thikr.id);
+    WidgetHelper.update(thikr);
+  }
+
+  void setCategoryFilter(ThikrCategory? category) {
+    categoryFilter.value = category;
   }
 
   void incrementCount() {
@@ -52,11 +116,11 @@ class AthkarController extends GetxController {
     );
 
     _updateThikrInList(updatedThikr);
+    _recordCount(updatedThikr);
+    _settings.hapticLight();
+    _settings.playClickSound();
+    WidgetHelper.update(updatedThikr);
 
-    // Haptic feedback
-    HapticFeedback.lightImpact();
-
-    // Show celebration if goal just reached
     if (reachedGoal) {
       _showGoalReachedDialog();
     }
@@ -70,8 +134,8 @@ class AthkarController extends GetxController {
 
     final updatedThikr = thikr.copyWith(count: thikr.count - 1);
     _updateThikrInList(updatedThikr);
-
-    HapticFeedback.selectionClick();
+    _settings.hapticSelection();
+    WidgetHelper.update(updatedThikr);
   }
 
   void resetCount() {
@@ -80,8 +144,55 @@ class AthkarController extends GetxController {
     final thikr = selectedThikr.value!;
     final updatedThikr = thikr.copyWith(count: 0, goalReached: false);
     _updateThikrInList(updatedThikr);
+    _settings.hapticMedium();
+    WidgetHelper.update(updatedThikr);
+  }
 
-    HapticFeedback.mediumImpact();
+  void _recordCount(Thikr thikr) {
+    final today = StorageService.todayKey();
+    var stats = _storage.getTodayStats();
+    if (stats.date != today) {
+      stats = DailyStats(date: today);
+    }
+
+    final per = Map<String, int>.from(stats.perThikr);
+    per[thikr.id] = (per[thikr.id] ?? 0) + 1;
+
+    String? topId = stats.topThikrId;
+    String? topName = stats.topThikrName;
+    var topCount = topId != null ? (per[topId] ?? 0) : 0;
+    if (per[thikr.id]! >= topCount) {
+      topId = thikr.id;
+      topName = thikr.name;
+    }
+
+    final updated = stats.copyWith(
+      totalCounts: stats.totalCounts + 1,
+      perThikr: per,
+      topThikrId: topId,
+      topThikrName: topName,
+    );
+    _storage.upsertTodayStats(updated);
+    todayStats.value = updated;
+    _updateStreak();
+  }
+
+  void _updateStreak() {
+    final today = StorageService.todayKey();
+    final last = _storage.lastActiveDate;
+    if (last == today) return;
+
+    final yesterday = StorageService.todayKey(
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
+
+    if (last == yesterday) {
+      streak.value = _storage.currentStreak + 1;
+    } else {
+      streak.value = 1;
+    }
+    _storage.setCurrentStreak(streak.value);
+    _storage.setLastActiveDate(today);
   }
 
   void _updateThikrInList(Thikr updatedThikr) {
@@ -93,71 +204,25 @@ class AthkarController extends GetxController {
     }
   }
 
-  void addNewThikr(String name, int goal) {
+  void addNewThikr(String name, int goal, {ThikrCategory? category}) {
     final newThikr = Thikr(
       id: _storage.generateId(),
       name: name,
       goal: goal,
       isDefault: false,
+      category: category ?? ThikrCategory.custom,
     );
 
     athkarList.add(newThikr);
     _storage.saveAthkar(athkarList);
     selectedThikr.value = newThikr;
+    _storage.setSelectedThikrId(newThikr.id);
+    WidgetHelper.update(newThikr);
 
-    Get.snackbar(
-      'تمت الإضافة',
-      'تم إضافة "$name" بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 2),
-    );
-  }
-
-  void deleteThikr(String id) {
-    final thikr = athkarList.firstWhereOrNull((t) => t.id == id);
-    if (thikr == null) return;
-
-    athkarList.removeWhere((t) => t.id == id);
-    _storage.saveAthkar(athkarList);
-
-    // Update selected thikr if needed
-    if (selectedThikr.value?.id == id) {
-      selectedThikr.value = athkarList.isNotEmpty ? athkarList.first : null;
-    }
-
-    Get.snackbar(
-      'تم الحذف',
-      'تم حذف "${thikr.name}" بنجاح',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withValues(alpha: 0.9),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 2),
-    );
-  }
-
-  void updateThikrGoal(String id, int newGoal) {
-    final index = athkarList.indexWhere((t) => t.id == id);
-    if (index != -1) {
-      final thikr = athkarList[index];
-      final updatedThikr = thikr.copyWith(
-        goal: newGoal,
-        goalReached: thikr.count >= newGoal ? thikr.goalReached : false,
-      );
-      athkarList[index] = updatedThikr;
-      if (selectedThikr.value?.id == id) {
-        selectedThikr.value = updatedThikr;
-      }
-      _storage.saveAthkar(athkarList);
-
+    if (!Get.testMode) {
       Get.snackbar(
-        'تم التحديث',
-        'تم تغيير الهدف إلى $newGoal',
+        'تمت الإضافة',
+        'تم إضافة "$name" بنجاح',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
         colorText: Colors.white,
@@ -168,16 +233,233 @@ class AthkarController extends GetxController {
     }
   }
 
-  void showEditGoalDialog() {
-    if (selectedThikr.value == null) return;
+  void deleteThikr(String id) {
+    final index = athkarList.indexWhere((t) => t.id == id);
+    if (index == -1) return;
 
-    final TextEditingController goalController = TextEditingController(
-      text: selectedThikr.value!.goal.toString(),
+    final thikr = athkarList[index];
+    _lastDeleted = thikr;
+    _lastDeletedIndex = index;
+
+    athkarList.removeAt(index);
+    _storage.saveAthkar(athkarList);
+
+    if (selectedThikr.value?.id == id) {
+      selectedThikr.value = athkarList.isNotEmpty ? athkarList.first : null;
+      _storage.setSelectedThikrId(selectedThikr.value?.id);
+      WidgetHelper.update(selectedThikr.value);
+    }
+
+    if (!Get.testMode) {
+      Get.snackbar(
+        'تم الحذف',
+        'تم حذف "${thikr.name}"',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 4),
+        mainButton: TextButton(
+          onPressed: undoDelete,
+          child: const Text(
+            'تراجع',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    }
+  }
+
+  void undoDelete() {
+    if (_lastDeleted == null) return;
+    final thikr = _lastDeleted!;
+    final index = (_lastDeletedIndex ?? athkarList.length)
+        .clamp(0, athkarList.length);
+    athkarList.insert(index, thikr);
+    _storage.saveAthkar(athkarList);
+    _lastDeleted = null;
+    _lastDeletedIndex = null;
+
+    if (Get.isSnackbarOpen) {
+      try {
+        Get.closeCurrentSnackbar();
+      } catch (_) {}
+    }
+    if (!Get.testMode) {
+      Get.snackbar(
+        'تم التراجع',
+        'تمت استعادة "${thikr.name}"',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  void updateThikr({
+    required String id,
+    String? name,
+    int? goal,
+    ThikrCategory? category,
+  }) {
+    final index = athkarList.indexWhere((t) => t.id == id);
+    if (index == -1) return;
+
+    final thikr = athkarList[index];
+    final newGoal = goal ?? thikr.goal;
+    final updatedThikr = thikr.copyWith(
+      name: name ?? thikr.name,
+      goal: newGoal,
+      category: category ?? thikr.category,
+      goalReached: thikr.count >= newGoal ? thikr.goalReached : false,
     );
+    athkarList[index] = updatedThikr;
+    if (selectedThikr.value?.id == id) {
+      selectedThikr.value = updatedThikr;
+    }
+    _storage.saveAthkar(athkarList);
+    WidgetHelper.update(selectedThikr.value);
+
+    if (!Get.testMode) {
+      Get.snackbar(
+        'تم التحديث',
+        'تم حفظ التعديلات',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  /// Backward-compatible helper used by older UI.
+  void updateThikrGoal(String id, int newGoal) {
+    updateThikr(id: id, goal: newGoal);
+  }
+
+  void addExtraPresets() {
+    final presets = [
+      ..._storage.getDefaultAthkar(),
+      ..._storage.getExtraPresets(),
+    ];
+    final existingNames = athkarList.map((t) => t.name).toSet();
+    final toAdd =
+        presets.where((t) => !existingNames.contains(t.name)).toList();
+    if (toAdd.isEmpty) {
+      Get.snackbar(
+        'تنبيه',
+        'كل الأذكار الإضافية موجودة مسبقاً',
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      return;
+    }
+    athkarList.addAll(toAdd);
+    _storage.saveAthkar(athkarList);
+    Get.snackbar(
+      'تمت الإضافة',
+      'تم إضافة ${toAdd.length} ذكر/أذكار',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+    );
+  }
+
+  Future<void> exportBackup() async {
+    try {
+      final json = _storage.exportBackupJson();
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/athkar_backup_${StorageService.todayKey()}.json',
+      );
+      await file.writeAsString(json);
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'نسخة احتياطية من تطبيق أذكاري',
+      );
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        'تعذر تصدير النسخة الاحتياطية',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    }
+  }
+
+  Future<void> importBackup() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      String raw;
+      if (file.bytes != null) {
+        raw = String.fromCharCodes(file.bytes!);
+      } else if (file.path != null) {
+        raw = await File(file.path!).readAsString();
+      } else {
+        throw Exception('تعذر قراءة الملف');
+      }
+
+      final count = _storage.importBackupJson(raw);
+      athkarList.assignAll(_storage.loadAthkar());
+      todayStats.value = _storage.getTodayStats();
+      streak.value = _storage.currentStreak;
+      selectedThikr.value = athkarList.isNotEmpty ? athkarList.first : null;
+      _settings.reloadFromStorage();
+      Get.changeThemeMode(_storage.themeMode);
+      WidgetHelper.update(selectedThikr.value);
+
+      Get.snackbar(
+        'تم الاستيراد',
+        'تم استعادة $count ذكر/أذكار',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'خطأ',
+        'تعذر استيراد الملف: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+    }
+  }
+
+  void showEditThikrDialog() {
+    if (selectedThikr.value == null) return;
+    final thikr = selectedThikr.value!;
+    final nameController = TextEditingController(text: thikr.name);
+    final goalController = TextEditingController(text: thikr.goal.toString());
+    var selectedCategory = thikr.category;
 
     Get.dialog(
-      Builder(
-        builder: (BuildContext context) {
+      StatefulBuilder(
+        builder: (context, setState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return Dialog(
             backgroundColor: Colors.transparent,
             child: Container(
@@ -185,190 +467,127 @@ class AthkarController extends GetxController {
               decoration: BoxDecoration(
                 color: Get.theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFE8C547), Color(0xFFD4AF37)],
-                          ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'تعديل الذكر',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: nameController,
+                      textDirection: TextDirection.rtl,
+                      decoration: InputDecoration(
+                        labelText: 'اسم الذكر',
+                        filled: true,
+                        fillColor: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : const Color(0xFFF5F5F5),
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                        child: const Icon(
-                          Icons.flag_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'تعديل الهدف',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Get.theme.brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    selectedThikr.value!.name,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Get.theme.brightness == Brightness.dark
-                          ? Colors.white70
-                          : Colors.black54,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Goal input
-                  TextField(
-                    controller: goalController,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Get.theme.brightness == Brightness.dark
-                          ? Colors.white
-                          : Colors.black87,
-                    ),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Get.theme.brightness == Brightness.dark
-                          ? const Color(0xFF2A2A2A)
-                          : const Color(0xFFF5F5F5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFD4AF37),
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Quick select buttons
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: [33, 50, 100, 200, 500, 1000].map((value) {
-                      return GestureDetector(
-                        onTap: () => goalController.text = value.toString(),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Get.theme.brightness == Brightness.dark
-                                ? const Color(0xFF2A2A2A)
-                                : const Color(0xFFF0F0F0),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Text(
-                            '$value',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Get.theme.brightness == Brightness.dark
-                                  ? Colors.white70
-                                  : Colors.black54,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'إلغاء',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Get.theme.brightness == Brightness.dark
-                                  ? Colors.white54
-                                  : Colors.black45,
-                            ),
-                          ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: goalController,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        labelText: 'الهدف',
+                        filled: true,
+                        fillColor: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : const Color(0xFFF5F5F5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            final newGoal = int.tryParse(goalController.text);
-                            if (newGoal != null && newGoal > 0) {
-                              Navigator.of(context).pop();
-                              updateThikrGoal(selectedThikr.value!.id, newGoal);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD4AF37),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 4,
-                          ),
-                          child: const Text(
-                            'حفظ',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      children: [33, 100, 1000].map((v) {
+                        return ActionChip(
+                          label: Text('$v'),
+                          onPressed: () =>
+                              goalController.text = v.toString(),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<ThikrCategory>(
+                      initialValue: selectedCategory,
+                      decoration: InputDecoration(
+                        labelText: 'التصنيف',
+                        filled: true,
+                        fillColor: isDark
+                            ? const Color(0xFF2A2A2A)
+                            : const Color(0xFFF5F5F5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
                       ),
-                    ],
-                  ),
-                ],
+                      items: ThikrCategory.values
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c,
+                              child: Text(c.labelAr),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (c) {
+                        if (c != null) {
+                          setState(() => selectedCategory = c);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text('إلغاء'),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final name = nameController.text.trim();
+                              final goal =
+                                  int.tryParse(goalController.text) ?? 0;
+                              if (name.isEmpty || goal <= 0) return;
+                              Get.back();
+                              updateThikr(
+                                id: thikr.id,
+                                name: name,
+                                goal: goal,
+                                category: selectedCategory,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD4AF37),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('حفظ'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -377,8 +596,11 @@ class AthkarController extends GetxController {
     );
   }
 
+  void showEditGoalDialog() => showEditThikrDialog();
+
   void _showGoalReachedDialog() {
-    HapticFeedback.heavyImpact();
+    _settings.hapticHeavy();
+    if (Get.testMode) return;
 
     Get.dialog(
       Builder(
@@ -392,7 +614,8 @@ class AthkarController extends GetxController {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Get.theme.colorScheme.primary.withValues(alpha: 0.3),
+                    color:
+                        Get.theme.colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 30,
                     spreadRadius: 5,
                   ),
@@ -420,7 +643,7 @@ class AthkarController extends GetxController {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'مبارك! 🎉',
+                    'مبارك!',
                     style: Get.textTheme.displayLarge?.copyWith(
                       color: Get.theme.colorScheme.primary,
                     ),
@@ -481,4 +704,10 @@ class AthkarController extends GetxController {
     final thikr = selectedThikr.value!;
     return '${thikr.count} / ${thikr.goal}';
   }
+
+  int get weekTotal {
+    return _storage.getWeekStats().fold(0, (sum, s) => sum + s.totalCounts);
+  }
+
+  List<DailyStats> get weekStats => _storage.getWeekStats();
 }

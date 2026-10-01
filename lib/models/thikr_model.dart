@@ -1,3 +1,5 @@
+import 'thikr_category.dart';
+
 class Thikr {
   final String id;
   final String name;
@@ -6,6 +8,7 @@ class Thikr {
   bool goalReached;
   final bool isDefault;
   final DateTime createdAt;
+  final ThikrCategory category;
 
   Thikr({
     required this.id,
@@ -15,27 +18,30 @@ class Thikr {
     this.goalReached = false,
     this.isDefault = false,
     DateTime? createdAt,
+    this.category = ThikrCategory.general,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'goal': goal,
-    'count': count,
-    'goalReached': goalReached,
-    'isDefault': isDefault,
-    'createdAt': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'goal': goal,
+        'count': count,
+        'goalReached': goalReached,
+        'isDefault': isDefault,
+        'createdAt': createdAt.toIso8601String(),
+        'category': category.name,
+      };
 
   factory Thikr.fromJson(Map<String, dynamic> json) => Thikr(
-    id: json['id'],
-    name: json['name'],
-    goal: json['goal'],
-    count: json['count'] ?? 0,
-    goalReached: json['goalReached'] ?? false,
-    isDefault: json['isDefault'] ?? false,
-    createdAt: DateTime.parse(json['createdAt']),
-  );
+        id: json['id'],
+        name: json['name'],
+        goal: json['goal'],
+        count: json['count'] ?? 0,
+        goalReached: json['goalReached'] ?? false,
+        isDefault: json['isDefault'] ?? false,
+        createdAt: DateTime.parse(json['createdAt']),
+        category: ThikrCategory.fromName(json['category'] as String?),
+      );
 
   Thikr copyWith({
     String? id,
@@ -45,6 +51,7 @@ class Thikr {
     bool? goalReached,
     bool? isDefault,
     DateTime? createdAt,
+    ThikrCategory? category,
   }) =>
       Thikr(
         id: id ?? this.id,
@@ -54,5 +61,6 @@ class Thikr {
         goalReached: goalReached ?? this.goalReached,
         isDefault: isDefault ?? this.isDefault,
         createdAt: createdAt ?? this.createdAt,
+        category: category ?? this.category,
       );
 }

@@ -1,17 +1,40 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+
 import '../controllers/athkar_controller.dart';
+import '../controllers/settings_controller.dart';
 import '../utils/app_theme.dart';
 import '../widgets/counter_button.dart';
 import '../widgets/progress_widget.dart';
 import 'athkar_list_view.dart';
+import 'settings_view.dart';
+import 'stats_view.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   const HomeView({super.key});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  @override
+  void initState() {
+    super.initState();
+    WakelockPlus.enable();
+  }
+
+  @override
+  void dispose() {
+    WakelockPlus.disable();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<AthkarController>();
+    final settings = Get.find<SettingsController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -21,6 +44,7 @@ class HomeView extends StatelessWidget {
         ),
         child: SafeArea(
           child: Obx(() {
+            final scale = settings.fontScale.value;
             if (controller.isLoading.value) {
               return const Center(
                 child: CircularProgressIndicator(
@@ -37,27 +61,21 @@ class HomeView extends StatelessWidget {
 
             return Column(
               children: [
-                // Header
                 _buildHeader(context, isDark),
-
-                // Thikr Name
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
                     selectedThikr.name,
                     style: AppTheme.arabicDisplayStyle.copyWith(
                       color: isDark ? AppTheme.darkText : AppTheme.lightText,
-                      fontSize: 28,
+                      fontSize: 28 * scale,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Goal reached badge
                 if (selectedThikr.goalReached)
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -91,10 +109,7 @@ class HomeView extends StatelessWidget {
                       ],
                     ),
                   ),
-
                 const Spacer(),
-
-                // Progress Ring & Counter
                 Stack(
                   alignment: Alignment.center,
                   children: [
@@ -110,24 +125,19 @@ class HomeView extends StatelessWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 16),
-
-                // Progress text
                 Text(
                   controller.progressText,
                   style: AppTheme.goalStyle.copyWith(
+                    fontSize: 18 * scale,
                     color: isDark
                         ? AppTheme.darkTextSecondary
                         : AppTheme.lightTextSecondary,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Edit goal button
                 GestureDetector(
-                  onTap: () => controller.showEditGoalDialog(),
+                  onTap: () => controller.showEditThikrDialog(),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -152,7 +162,7 @@ class HomeView extends StatelessWidget {
                         ),
                         SizedBox(width: 6),
                         Text(
-                          'تعديل الهدف',
+                          'تعديل الذكر',
                           style: TextStyle(
                             fontSize: 14,
                             color: AppTheme.primaryGold,
@@ -163,12 +173,8 @@ class HomeView extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const Spacer(),
-
-                // Control buttons
                 _buildControlButtons(controller, isDark),
-
                 const SizedBox(height: 24),
               ],
             );
@@ -184,13 +190,11 @@ class HomeView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Menu button
           _buildIconButton(
             icon: Icons.menu_rounded,
             onTap: () => Get.to(() => const AthkarListView()),
             isDark: isDark,
           ),
-          // Title
           Text(
             'أذكاري',
             style: AppTheme.arabicTitleStyle.copyWith(
@@ -198,8 +202,23 @@ class HomeView extends StatelessWidget {
               fontSize: 22,
             ),
           ),
-          // Placeholder for symmetry
-          const SizedBox(width: 48),
+          Row(
+            children: [
+              _buildIconButton(
+                icon: Icons.bar_chart_rounded,
+                onTap: () => Get.to(() => const StatsView()),
+                isDark: isDark,
+                size: 40,
+              ),
+              const SizedBox(width: 8),
+              _buildIconButton(
+                icon: Icons.settings_rounded,
+                onTap: () => Get.to(() => const SettingsView()),
+                isDark: isDark,
+                size: 40,
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -209,12 +228,13 @@ class HomeView extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
     required bool isDark,
+    double size = 48,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: size,
+        height: size,
         decoration: BoxDecoration(
           color: isDark
               ? AppTheme.darkSurfaceVariant
@@ -231,7 +251,7 @@ class HomeView extends StatelessWidget {
         child: Icon(
           icon,
           color: AppTheme.primaryGold,
-          size: 24,
+          size: size < 48 ? 20 : 24,
         ),
       ),
     );
@@ -243,14 +263,12 @@ class HomeView extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Decrement button
           _buildControlButton(
             icon: Icons.remove_rounded,
             label: 'إنقاص',
             onTap: controller.decrementCount,
             isDark: isDark,
           ),
-          // Reset button
           _buildControlButton(
             icon: Icons.refresh_rounded,
             label: 'إعادة',

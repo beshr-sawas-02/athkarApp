@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+
 import '../models/thikr_model.dart';
 import '../utils/app_theme.dart';
 
@@ -7,6 +8,7 @@ class ThikrCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
   final bool isDark;
 
   const ThikrCard({
@@ -15,6 +17,7 @@ class ThikrCard extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.onDelete,
+    this.onEdit,
     required this.isDark,
   });
 
@@ -34,15 +37,15 @@ class ThikrCard extends StatelessWidget {
           color: isSelected
               ? AppTheme.primaryGold.withValues(alpha: isDark ? 0.2 : 0.1)
               : isDark
-              ? AppTheme.darkSurface
-              : AppTheme.lightSurface,
+                  ? AppTheme.darkSurface
+                  : AppTheme.lightSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
                 ? AppTheme.primaryGold
                 : isDark
-                ? AppTheme.darkDivider
-                : AppTheme.lightDivider,
+                    ? AppTheme.darkDivider
+                    : AppTheme.lightDivider,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
@@ -62,7 +65,6 @@ class ThikrCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Progress indicator
             SizedBox(
               width: 50,
               height: 50,
@@ -102,7 +104,6 @@ class ThikrCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            // Thikr info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,9 +122,9 @@ class ThikrCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${thikr.count} / ${thikr.goal}',
+                    '${thikr.count} / ${thikr.goal} · ${thikr.category.labelAr}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: isDark
                           ? AppTheme.darkTextSecondary
                           : AppTheme.lightTextSecondary,
@@ -132,7 +133,15 @@ class ThikrCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Delete button for custom athkar
+            if (onEdit != null)
+              IconButton(
+                onPressed: onEdit,
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppTheme.primaryGold,
+                  size: 20,
+                ),
+              ),
             if (!thikr.isDefault && onDelete != null)
               IconButton(
                 onPressed: onDelete,
@@ -142,7 +151,6 @@ class ThikrCard extends StatelessWidget {
                   size: 22,
                 ),
               ),
-            // Selection indicator
             if (isSelected)
               Container(
                 padding: const EdgeInsets.all(4),
