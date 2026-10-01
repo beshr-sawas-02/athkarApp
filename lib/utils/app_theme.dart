@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
@@ -98,10 +98,10 @@ class AppTheme {
         color: lightText,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: lightSurface,
       elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -153,10 +153,10 @@ class AppTheme {
         color: darkText,
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: darkSurface,
       elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.4),
+      shadowColor: Colors.black.withValues(alpha: 0.4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -188,7 +188,7 @@ class AppTheme {
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.08),
+        color: Colors.black.withValues(alpha: 0.08),
         blurRadius: 20,
         offset: const Offset(0, 4),
       ),
@@ -200,7 +200,7 @@ class AppTheme {
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: Colors.black.withOpacity(0.3),
+        color: Colors.black.withValues(alpha: 0.3),
         blurRadius: 20,
         offset: const Offset(0, 4),
       ),
@@ -216,7 +216,7 @@ class AppTheme {
     shape: BoxShape.circle,
     boxShadow: [
       BoxShadow(
-        color: primaryGold.withOpacity(isDark ? 0.4 : 0.3),
+        color: primaryGold.withValues(alpha: isDark ? 0.4 : 0.3),
         blurRadius: 20,
         offset: const Offset(0, 8),
       ),

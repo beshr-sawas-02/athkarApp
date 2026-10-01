@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
 import '../utils/app_theme.dart';
 
 class AddThikrDialog extends StatefulWidget {
@@ -55,7 +54,7 @@ class _AddThikrDialogState extends State<AddThikrDialog> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
+              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.15),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -110,8 +109,8 @@ class _AddThikrDialogState extends State<AddThikrDialog> {
                   hintText: 'مثال: سبحان الله',
                   hintStyle: TextStyle(
                     color: isDark
-                        ? AppTheme.darkTextSecondary.withOpacity(0.5)
-                        : AppTheme.lightTextSecondary.withOpacity(0.5),
+                        ? AppTheme.darkTextSecondary.withValues(alpha: 0.5)
+                        : AppTheme.lightTextSecondary.withValues(alpha: 0.5),
                   ),
                   filled: true,
                   fillColor: isDark
@@ -244,7 +243,7 @@ class _AddThikrDialogState extends State<AddThikrDialog> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 4,
-                        shadowColor: AppTheme.primaryGold.withOpacity(0.4),
+                        shadowColor: AppTheme.primaryGold.withValues(alpha: 0.4),
                       ),
                       child: const Text(
                         'إضافة',

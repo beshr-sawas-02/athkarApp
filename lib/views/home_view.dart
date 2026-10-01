@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/athkar_controller.dart';
 import '../utils/app_theme.dart';
@@ -65,21 +65,21 @@ class HomeView extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.success.withOpacity(0.15),
+                      color: AppTheme.success.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: AppTheme.success.withOpacity(0.3),
+                        color: AppTheme.success.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.check_circle_rounded,
                           color: AppTheme.success,
                           size: 18,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           'تم الوصول للهدف',
                           style: TextStyle(
@@ -139,10 +139,10 @@ class HomeView extends StatelessWidget {
                           : AppTheme.lightSurface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: AppTheme.primaryGold.withOpacity(0.3),
+                        color: AppTheme.primaryGold.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
@@ -150,7 +150,7 @@ class HomeView extends StatelessWidget {
                           color: AppTheme.primaryGold,
                           size: 16,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           'تعديل الهدف',
                           style: TextStyle(
@@ -222,7 +222,7 @@ class HomeView extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -281,7 +281,7 @@ class HomeView extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -377,7 +377,7 @@ class HomeView extends StatelessWidget {
           Icon(
             Icons.auto_awesome_rounded,
             size: 80,
-            color: AppTheme.primaryGold.withOpacity(0.5),
+            color: AppTheme.primaryGold.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 24),
           Text(

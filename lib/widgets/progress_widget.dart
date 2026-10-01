@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../utils/app_theme.dart';
 
@@ -30,7 +30,7 @@ class CircularProgressWidget extends StatelessWidget {
               shape: BoxShape.circle,
               color: isDark
                   ? AppTheme.darkSurfaceVariant
-                  : AppTheme.lightDivider.withOpacity(0.5),
+                  : AppTheme.lightDivider.withValues(alpha: 0.5),
             ),
           ),
           // Progress arc
@@ -54,8 +54,8 @@ class CircularProgressWidget extends StatelessWidget {
               boxShadow: [
                 BoxShadow(
                   color: isDark
-                      ? Colors.black.withOpacity(0.5)
-                      : Colors.black.withOpacity(0.1),
+                      ? Colors.black.withValues(alpha: 0.5)
+                      : Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -96,16 +96,16 @@ class ProgressArcPainter extends CustomPainter {
     // Progress arc with gradient
     if (progress > 0) {
       final rect = Rect.fromCircle(center: center, radius: radius);
-      final gradient = SweepGradient(
+      const gradient = SweepGradient(
         startAngle: -math.pi / 2,
         endAngle: math.pi * 1.5,
-        colors: const [
+        colors: [
           AppTheme.primaryGoldLight,
           AppTheme.primaryGold,
           AppTheme.primaryGoldDark,
         ],
-        stops: const [0.0, 0.5, 1.0],
-        transform: const GradientRotation(-math.pi / 2),
+        stops: [0.0, 0.5, 1.0],
+        transform: GradientRotation(-math.pi / 2),
       );
 
       final progressPaint = Paint()
@@ -130,7 +130,7 @@ class ProgressArcPainter extends CustomPainter {
         final endY = center.dy + radius * math.sin(endAngle);
 
         final glowPaint = Paint()
-          ..color = AppTheme.primaryGold.withOpacity(0.5)
+          ..color = AppTheme.primaryGold.withValues(alpha: 0.5)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
         canvas.drawCircle(Offset(endX, endY), 8, glowPaint);

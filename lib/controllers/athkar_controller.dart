@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../models/thikr_model.dart';
@@ -109,7 +109,7 @@ class AthkarController extends GetxController {
       'تمت الإضافة',
       'تم إضافة "$name" بنجاح',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Get.theme.colorScheme.primary.withOpacity(0.9),
+      backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
@@ -133,7 +133,7 @@ class AthkarController extends GetxController {
       'تم الحذف',
       'تم حذف "${thikr.name}" بنجاح',
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.withOpacity(0.9),
+      backgroundColor: Colors.red.withValues(alpha: 0.9),
       colorText: Colors.white,
       margin: const EdgeInsets.all(16),
       borderRadius: 12,
@@ -159,7 +159,7 @@ class AthkarController extends GetxController {
         'تم التحديث',
         'تم تغيير الهدف إلى $newGoal',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.primary.withOpacity(0.9),
+        backgroundColor: Get.theme.colorScheme.primary.withValues(alpha: 0.9),
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
         borderRadius: 12,
@@ -187,7 +187,7 @@ class AthkarController extends GetxController {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 30,
                     offset: const Offset(0, 10),
                   ),
@@ -295,7 +295,7 @@ class AthkarController extends GetxController {
                                 : const Color(0xFFF0F0F0),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: const Color(0xFFD4AF37).withOpacity(0.3),
+                              color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
@@ -392,7 +392,7 @@ class AthkarController extends GetxController {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Get.theme.colorScheme.primary.withOpacity(0.3),
+                    color: Get.theme.colorScheme.primary.withValues(alpha: 0.3),
                     blurRadius: 30,
                     spreadRadius: 5,
                   ),
@@ -407,7 +407,7 @@ class AthkarController extends GetxController {
                       gradient: LinearGradient(
                         colors: [
                           Get.theme.colorScheme.primary,
-                          Get.theme.colorScheme.primary.withOpacity(0.7),
+                          Get.theme.colorScheme.primary.withValues(alpha: 0.7),
                         ],
                       ),
                       shape: BoxShape.circle,

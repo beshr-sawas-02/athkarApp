@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
 
 class CounterButton extends StatefulWidget {
@@ -79,12 +79,12 @@ class _CounterButtonState extends State<CounterButton>
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.primaryGold
-                        .withOpacity(_glowAnimation.value),
+                        .withValues(alpha: _glowAnimation.value),
                     blurRadius: 30,
                     spreadRadius: 5,
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 15,
                     offset: const Offset(0, 8),
                   ),
@@ -100,7 +100,7 @@ class _CounterButtonState extends State<CounterButton>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         width: 2,
                       ),
                     ),
@@ -117,7 +117,7 @@ class _CounterButtonState extends State<CounterButton>
                               : Colors.white,
                           shadows: [
                             Shadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -129,7 +129,7 @@ class _CounterButtonState extends State<CounterButton>
                         color: (widget.isDark
                             ? AppTheme.darkBackground
                             : Colors.white)
-                            .withOpacity(0.7),
+                            .withValues(alpha: 0.7),
                         size: 24,
                       ),
                     ],

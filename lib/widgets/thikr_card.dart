@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/thikr_model.dart';
 import '../utils/app_theme.dart';
 
@@ -32,7 +32,7 @@ class ThikrCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppTheme.primaryGold.withOpacity(isDark ? 0.2 : 0.1)
+              ? AppTheme.primaryGold.withValues(alpha: isDark ? 0.2 : 0.1)
               : isDark
               ? AppTheme.darkSurface
               : AppTheme.lightSurface,
@@ -48,13 +48,13 @@ class ThikrCard extends StatelessWidget {
           boxShadow: [
             if (isSelected)
               BoxShadow(
-                color: AppTheme.primaryGold.withOpacity(0.2),
+                color: AppTheme.primaryGold.withValues(alpha: 0.2),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               )
             else
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -138,7 +138,7 @@ class ThikrCard extends StatelessWidget {
                 onPressed: onDelete,
                 icon: Icon(
                   Icons.delete_outline_rounded,
-                  color: AppTheme.error.withOpacity(0.7),
+                  color: AppTheme.error.withValues(alpha: 0.7),
                   size: 22,
                 ),
               ),

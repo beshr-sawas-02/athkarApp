@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/athkar_controller.dart';
 import '../utils/app_theme.dart';
@@ -97,7 +97,7 @@ class AthkarListView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -135,13 +135,13 @@ class AthkarListView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.primaryGold.withOpacity(0.1),
+              color: AppTheme.primaryGold.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.format_list_bulleted_rounded,
               size: 64,
-              color: AppTheme.primaryGold.withOpacity(0.6),
+              color: AppTheme.primaryGold.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 24),
@@ -196,7 +196,7 @@ class AthkarListView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.error.withOpacity(0.15),
+                color: AppTheme.error.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -232,7 +232,7 @@ class AthkarListView extends StatelessWidget {
               'لا يمكن التراجع عن هذا الإجراء',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.error.withOpacity(0.8),
+                color: AppTheme.error.withValues(alpha: 0.8),
               ),
               textAlign: TextAlign.center,
             ),
