@@ -39,7 +39,7 @@ class ThikrCard extends StatelessWidget {
               : isDark
                   ? AppTheme.darkSurface
                   : AppTheme.lightSurface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           border: Border.all(
             color: isSelected
                 ? AppTheme.primaryGold
@@ -48,20 +48,7 @@ class ThikrCard extends StatelessWidget {
                     : AppTheme.lightDivider,
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: [
-            if (isSelected)
-              BoxShadow(
-                color: AppTheme.primaryGold.withValues(alpha: 0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              )
-            else
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-          ],
+          boxShadow: AppTheme.softShadow(isDark),
         ),
         child: Row(
           children: [

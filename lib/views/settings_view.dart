@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../controllers/athkar_controller.dart';
 import '../controllers/settings_controller.dart';
 import '../utils/app_theme.dart';
+import '../widgets/app_icon_button.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -15,10 +16,8 @@ class SettingsView extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark ? AppTheme.darkGradient : AppTheme.lightGradient,
-        ),
+      body: AtmosphereBackground(
+        isDark: isDark,
         child: SafeArea(
           child: Column(
             children: [
@@ -32,9 +31,24 @@ class SettingsView extends StatelessWidget {
                       return _card(
                         isDark,
                         children: [
-                          _themeTile(settings, ThemeMode.system, 'تلقائي (النظام)', Icons.brightness_auto),
-                          _themeTile(settings, ThemeMode.light, 'نهاري', Icons.light_mode),
-                          _themeTile(settings, ThemeMode.dark, 'ليلي', Icons.dark_mode),
+                          _themeTile(
+                            settings,
+                            ThemeMode.system,
+                            'تلقائي (النظام)',
+                            AppIcons.auto,
+                          ),
+                          _themeTile(
+                            settings,
+                            ThemeMode.light,
+                            'نهاري',
+                            AppIcons.day,
+                          ),
+                          _themeTile(
+                            settings,
+                            ThemeMode.dark,
+                            'ليلي',
+                            AppIcons.night,
+                          ),
                         ],
                       );
                     }),
@@ -45,10 +59,16 @@ class SettingsView extends StatelessWidget {
                         isDark,
                         children: [
                           SwitchListTile(
+                            secondary: const Icon(
+                              AppIcons.vibrate,
+                              color: AppTheme.primaryGold,
+                            ),
                             title: Text(
                               'الاهتزاز',
                               style: TextStyle(
-                                color: isDark ? AppTheme.darkText : AppTheme.lightText,
+                                color: isDark
+                                    ? AppTheme.darkText
+                                    : AppTheme.lightText,
                               ),
                             ),
                             value: settings.vibrationEnabled.value,
@@ -56,10 +76,16 @@ class SettingsView extends StatelessWidget {
                             onChanged: settings.setVibrationEnabled,
                           ),
                           SwitchListTile(
+                            secondary: const Icon(
+                              AppIcons.sound,
+                              color: AppTheme.primaryGold,
+                            ),
                             title: Text(
                               'صوت النقر',
                               style: TextStyle(
-                                color: isDark ? AppTheme.darkText : AppTheme.lightText,
+                                color: isDark
+                                    ? AppTheme.darkText
+                                    : AppTheme.lightText,
                               ),
                             ),
                             value: settings.soundEnabled.value,
@@ -67,10 +93,16 @@ class SettingsView extends StatelessWidget {
                             onChanged: settings.setSoundEnabled,
                           ),
                           SwitchListTile(
+                            secondary: const Icon(
+                              AppIcons.resetDaily,
+                              color: AppTheme.primaryGold,
+                            ),
                             title: Text(
                               'إعادة تعيين يومية',
                               style: TextStyle(
-                                color: isDark ? AppTheme.darkText : AppTheme.lightText,
+                                color: isDark
+                                    ? AppTheme.darkText
+                                    : AppTheme.lightText,
                               ),
                             ),
                             subtitle: Text(
@@ -115,8 +147,7 @@ class SettingsView extends StatelessWidget {
                                 Text(
                                   'معاينة حجم النص',
                                   style: AppTheme.arabicBodyStyle.copyWith(
-                                    fontSize:
-                                        18 * settings.fontScale.value,
+                                    fontSize: 18 * settings.fontScale.value,
                                     color: isDark
                                         ? AppTheme.darkText
                                         : AppTheme.lightText,
@@ -134,8 +165,10 @@ class SettingsView extends StatelessWidget {
                       isDark,
                       children: [
                         ListTile(
-                          leading: const Icon(Icons.upload_file,
-                              color: AppTheme.primaryGold),
+                          leading: const Icon(
+                            AppIcons.backup,
+                            color: AppTheme.primaryGold,
+                          ),
                           title: Text(
                             'تصدير نسخة احتياطية',
                             style: TextStyle(
@@ -147,8 +180,10 @@ class SettingsView extends StatelessWidget {
                           onTap: athkar.exportBackup,
                         ),
                         ListTile(
-                          leading: const Icon(Icons.download,
-                              color: AppTheme.primaryGold),
+                          leading: const Icon(
+                            AppIcons.restore,
+                            color: AppTheme.primaryGold,
+                          ),
                           title: Text(
                             'استيراد نسخة احتياطية',
                             style: TextStyle(
@@ -160,8 +195,10 @@ class SettingsView extends StatelessWidget {
                           onTap: athkar.importBackup,
                         ),
                         ListTile(
-                          leading: const Icon(Icons.playlist_add,
-                              color: AppTheme.primaryGold),
+                          leading: const Icon(
+                            AppIcons.presets,
+                            color: AppTheme.primaryGold,
+                          ),
                           title: Text(
                             'إضافة أذكار جاهزة إضافية',
                             style: TextStyle(
@@ -189,23 +226,10 @@ class SettingsView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          GestureDetector(
+          AppIconButton(
+            icon: Icons.arrow_back_ios_rounded,
             onTap: () => Get.back(),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppTheme.darkSurfaceVariant
-                    : AppTheme.lightSurface,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_rounded,
-                color: AppTheme.primaryGold,
-                size: 22,
-              ),
-            ),
+            isDark: isDark,
           ),
           const Spacer(),
           Text(
@@ -239,11 +263,11 @@ class SettingsView extends StatelessWidget {
   }
 
   Widget _card(bool isDark, {required List<Widget> children}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return Material(
+      color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
       child: Column(children: children),
     );
   }

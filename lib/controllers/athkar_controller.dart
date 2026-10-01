@@ -9,8 +9,10 @@ import 'package:share_plus/share_plus.dart';
 import '../models/daily_stats.dart';
 import '../models/thikr_category.dart';
 import '../models/thikr_model.dart';
+import '../utils/app_theme.dart';
 import '../utils/storage_service.dart';
 import '../utils/widget_helper.dart';
+import '../widgets/celebration_burst.dart';
 import 'settings_controller.dart';
 
 class AthkarController extends GetxController {
@@ -382,9 +384,11 @@ class AthkarController extends GetxController {
         '${dir.path}/athkar_backup_${StorageService.todayKey()}.json',
       );
       await file.writeAsString(json);
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'نسخة احتياطية من تطبيق أذكاري',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'نسخة احتياطية من تطبيق أذكاري',
+        ),
       );
     } catch (e) {
       Get.snackbar(
@@ -607,82 +611,86 @@ class AthkarController extends GetxController {
         builder: (BuildContext context) {
           return Dialog(
             backgroundColor: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Get.theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        Get.theme.colorScheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Get.theme.colorScheme.primary,
-                          Get.theme.colorScheme.primary.withValues(alpha: 0.7),
-                        ],
+            child: CelebrationBurst(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Get.theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Get.theme.colorScheme.primary
+                          .withValues(alpha: 0.3),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Get.theme.colorScheme.primary,
+                            Get.theme.colorScheme.primary
+                                .withValues(alpha: 0.7),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                      shape: BoxShape.circle,
+                      child: const Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 48,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.check_rounded,
-                      color: Colors.white,
-                      size: 48,
+                    const SizedBox(height: 20),
+                    Text(
+                      'مبارك!',
+                      style: Get.textTheme.displayLarge?.copyWith(
+                        color: Get.theme.colorScheme.primary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'مبارك!',
-                    style: Get.textTheme.displayLarge?.copyWith(
-                      color: Get.theme.colorScheme.primary,
+                    const SizedBox(height: 12),
+                    Text(
+                      'لقد أتممت الهدف المحدد',
+                      style: Get.textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'لقد أتممت الهدف المحدد',
-                    style: Get.textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'يمكنك الاستمرار في العد',
-                    style: Get.textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Get.theme.colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 8),
+                    Text(
+                      'يمكنك الاستمرار في العد',
+                      style: Get.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Get.theme.colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusSm),
+                          ),
+                        ),
+                        child: const Text(
+                          'متابعة',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        'متابعة',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

@@ -5,6 +5,7 @@ import '../controllers/athkar_controller.dart';
 import '../models/thikr_category.dart';
 import '../utils/app_theme.dart';
 import '../widgets/add_thikr_dialog.dart';
+import '../widgets/app_icon_button.dart';
 import '../widgets/thikr_card.dart';
 
 class AthkarListView extends StatelessWidget {
@@ -16,10 +17,8 @@ class AthkarListView extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark ? AppTheme.darkGradient : AppTheme.lightGradient,
-        ),
+      body: AtmosphereBackground(
+        isDark: isDark,
         child: SafeArea(
           child: Column(
             children: [
@@ -71,7 +70,7 @@ class AthkarListView extends StatelessWidget {
         backgroundColor: AppTheme.primaryGold,
         foregroundColor: Colors.white,
         elevation: 8,
-        icon: const Icon(Icons.add_rounded),
+        icon: const Icon(AppIcons.add),
         label: const Text(
           'إضافة ذكر',
           style: TextStyle(
@@ -138,35 +137,14 @@ class AthkarListView extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, bool isDark) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          GestureDetector(
+          AppIconButton(
+            icon: Icons.arrow_back_ios_rounded,
             onTap: () => Get.back(),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppTheme.darkSurfaceVariant
-                    : AppTheme.lightSurface,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_rounded,
-                color: AppTheme.primaryGold,
-                size: 22,
-              ),
-            ),
+            isDark: isDark,
           ),
           const Spacer(),
           Text(
@@ -185,40 +163,61 @@ class AthkarListView extends StatelessWidget {
 
   Widget _buildEmptyState(bool isDark) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryGold.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGold.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                AppIcons.beads,
+                size: 64,
+                color: AppTheme.primaryGold.withValues(alpha: 0.7),
+              ),
             ),
-            child: Icon(
-              Icons.format_list_bulleted_rounded,
-              size: 64,
-              color: AppTheme.primaryGold.withValues(alpha: 0.6),
+            const SizedBox(height: 24),
+            Text(
+              'لا توجد أذكار في هذا التصنيف',
+              style: AppTheme.arabicTitleStyle.copyWith(
+                color: isDark ? AppTheme.darkText : AppTheme.lightText,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'لا توجد أذكار في هذا التصنيف',
-            style: AppTheme.arabicTitleStyle.copyWith(
-              color: isDark ? AppTheme.darkText : AppTheme.lightText,
+            const SizedBox(height: 12),
+            Text(
+              'أضف ذكراً جديداً أو غيّر التصنيف',
+              style: AppTheme.arabicBodyStyle.copyWith(
+                color: isDark
+                    ? AppTheme.darkTextSecondary
+                    : AppTheme.lightTextSecondary,
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'اضغط على الزر أدناه لإضافة ذكر جديد',
-            style: AppTheme.arabicBodyStyle.copyWith(
-              color: isDark
-                  ? AppTheme.darkTextSecondary
-                  : AppTheme.lightTextSecondary,
-              fontSize: 16,
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  _showAddDialog(Get.find<AthkarController>()),
+              icon: const Icon(AppIcons.add),
+              label: const Text('إضافة ذكر'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGold,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 100),
-        ],
+            const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }

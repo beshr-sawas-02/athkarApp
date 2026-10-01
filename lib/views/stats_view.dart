@@ -3,9 +3,38 @@ import 'package:get/get.dart';
 
 import '../controllers/athkar_controller.dart';
 import '../utils/app_theme.dart';
+import '../widgets/app_icon_button.dart';
 
 class StatsView extends StatelessWidget {
   const StatsView({super.key});
+
+  String _friendlyDate(String iso) {
+    final parts = iso.split('-');
+    if (parts.length != 3) return iso;
+    final date = DateTime(
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+      int.parse(parts[2]),
+    );
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final target = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(target).inDays;
+
+    if (diff == 0) return 'اليوم';
+    if (diff == 1) return 'أمس';
+
+    const weekdays = [
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
+    ];
+    return weekdays[date.weekday - 1];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,10 +42,8 @@ class StatsView extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark ? AppTheme.darkGradient : AppTheme.lightGradient,
-        ),
+      body: AtmosphereBackground(
+        isDark: isDark,
         child: SafeArea(
           child: Column(
             children: [
@@ -26,6 +53,9 @@ class StatsView extends StatelessWidget {
                   final today = controller.todayStats.value;
                   final week = controller.weekStats;
                   final weekTotal = controller.weekTotal;
+                  final max = week
+                      .map((e) => e.totalCounts)
+                      .fold<int>(1, (a, b) => a > b ? a : b);
 
                   return ListView(
                     padding: const EdgeInsets.all(16),
@@ -37,7 +67,7 @@ class StatsView extends StatelessWidget {
                               isDark,
                               title: 'اليوم',
                               value: '${today.totalCounts}',
-                              icon: Icons.today,
+                              icon: AppIcons.today,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -46,7 +76,7 @@ class StatsView extends StatelessWidget {
                               isDark,
                               title: 'هذا الأسبوع',
                               value: '$weekTotal',
-                              icon: Icons.date_range,
+                              icon: AppIcons.week,
                             ),
                           ),
                         ],
@@ -59,7 +89,7 @@ class StatsView extends StatelessWidget {
                               isDark,
                               title: 'سلسلة الأيام',
                               value: '${controller.streak.value}',
-                              icon: Icons.local_fire_department,
+                              icon: AppIcons.streak,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -68,7 +98,7 @@ class StatsView extends StatelessWidget {
                               isDark,
                               title: 'أكثر ذكر اليوم',
                               value: today.topThikrName ?? '—',
-                              icon: Icons.star,
+                              icon: AppIcons.star,
                               valueSize: 16,
                             ),
                           ),
@@ -79,16 +109,78 @@ class StatsView extends StatelessWidget {
                         'آخر 7 أيام',
                         style: AppTheme.arabicTitleStyle.copyWith(
                           fontSize: 18,
-                          color: isDark
-                              ? AppTheme.darkText
-                              : AppTheme.lightText,
+                          color:
+                              isDark ? AppTheme.darkText : AppTheme.lightText,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
+                      Container(
+                        height: 180,
+                        padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppTheme.darkSurface
+                              : AppTheme.lightSurface,
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusMd),
+                          boxShadow: AppTheme.softShadow(isDark),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            for (final day in week.reversed)
+                              Expanded(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        '${day.totalCounts}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppTheme.primaryGold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Flexible(
+                                        child: FractionallySizedBox(
+                                          heightFactor: (day.totalCounts / max)
+                                              .clamp(0.05, 1.0),
+                                          widthFactor: 1,
+                                          alignment: Alignment.bottomCenter,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: AppTheme.goldGradient,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        _friendlyDate(day.date),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: isDark
+                                              ? AppTheme.darkTextSecondary
+                                              : AppTheme.lightTextSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       ...week.map((day) {
-                        final max = week
-                            .map((e) => e.totalCounts)
-                            .fold<int>(1, (a, b) => a > b ? a : b);
                         final ratio = day.totalCounts / max;
                         return Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -97,7 +189,9 @@ class StatsView extends StatelessWidget {
                             color: isDark
                                 ? AppTheme.darkSurface
                                 : AppTheme.lightSurface,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMd),
+                            boxShadow: AppTheme.softShadow(isDark),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,15 +201,16 @@ class StatsView extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    day.date,
+                                    _friendlyDate(day.date),
                                     style: TextStyle(
+                                      fontWeight: FontWeight.w600,
                                       color: isDark
-                                          ? AppTheme.darkTextSecondary
-                                          : AppTheme.lightTextSecondary,
+                                          ? AppTheme.darkText
+                                          : AppTheme.lightText,
                                     ),
                                   ),
                                   Text(
-                                    '${day.totalCounts}',
+                                    '${day.totalCounts} تسبيحة',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: AppTheme.primaryGold,
@@ -155,23 +250,10 @@ class StatsView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          GestureDetector(
+          AppIconButton(
+            icon: Icons.arrow_back_ios_rounded,
             onTap: () => Get.back(),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppTheme.darkSurfaceVariant
-                    : AppTheme.lightSurface,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_rounded,
-                color: AppTheme.primaryGold,
-                size: 22,
-              ),
-            ),
+            isDark: isDark,
           ),
           const Spacer(),
           Text(
@@ -199,7 +281,8 @@ class StatsView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        boxShadow: AppTheme.softShadow(isDark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

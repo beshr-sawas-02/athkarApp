@@ -5,12 +5,14 @@ class CounterButton extends StatefulWidget {
   final VoidCallback onTap;
   final int count;
   final bool isDark;
+  final bool showHint;
 
   const CounterButton({
     super.key,
     required this.onTap,
     required this.count,
     required this.isDark,
+    this.showHint = true,
   });
 
   @override
@@ -125,13 +127,27 @@ class _CounterButtonState extends State<CounterButton>
                         ),
                       ),
                       Icon(
-                        Icons.touch_app_rounded,
+                        Icons.fingerprint_rounded,
                         color: (widget.isDark
                             ? AppTheme.darkBackground
                             : Colors.white)
                             .withValues(alpha: 0.7),
                         size: 24,
                       ),
+                      if (widget.showHint) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'تسبيح',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: (widget.isDark
+                                    ? AppTheme.darkBackground
+                                    : Colors.white)
+                                .withValues(alpha: 0.75),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
